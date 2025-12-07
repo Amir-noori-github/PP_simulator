@@ -46,43 +46,53 @@ public class MyEngine extends Engine {
 
     @Override
     protected void runEvent(Event e) {
-        // Always prefer the visitor attached to the event
         Visitor v = e.getVisitor();
 
         switch ((EventType) e.getType()) {
             case ARRIVAL_TICKETBOOTH:
-                // Visitor is provided by ArrivalProcess; enqueue and schedule next arrival
                 ticketBooth.addQueue(v);
+                v.arriveAtAttraction("TicketBooth");
                 ticketBoothArrivals.generateNextEvent();
                 break;
 
             case DEPARTURE_TICKETBOOTH:
-                // Finish service at ticket booth and move visitor to rest area
                 v = ticketBooth.endService();
+                v.departFromAttraction("TicketBooth", 0);
                 restArea.addQueue(v);
+                v.arriveAtAttraction("RestArea");
                 break;
 
             case DEPARTURE_REST:
-                // Finish service at rest and branch to an attraction
                 v = restArea.endService();
+                v.departFromAttraction("RestArea", 0);
                 double rnd = Math.random();
-                if (rnd < 0.33)      attraction1.addQueue(v);
-                else if (rnd < 0.66) attraction2.addQueue(v);
-                else                 attraction3.addQueue(v);
+                if (rnd < 0.33) {
+                    v.arriveAtAttraction("Attraction1");
+                    attraction1.addQueue(v);
+                } else if (rnd < 0.66) {
+                    v.arriveAtAttraction("Attraction2");
+                    attraction2.addQueue(v);
+                } else {
+                    v.arriveAtAttraction("Attraction3");
+                    attraction3.addQueue(v);
+                }
                 break;
 
             case DEPARTURE_ATTRACTION1:
                 v = attraction1.endService();
+                v.departFromAttraction("Attraction1", 0);
                 handleExitOrReturn(v);
                 break;
 
             case DEPARTURE_ATTRACTION2:
                 v = attraction2.endService();
+                v.departFromAttraction("Attraction2", 0);
                 handleExitOrReturn(v);
                 break;
 
             case DEPARTURE_ATTRACTION3:
                 v = attraction3.endService();
+                v.departFromAttraction("Attraction3", 0);
                 handleExitOrReturn(v);
                 break;
 
@@ -100,13 +110,13 @@ public class MyEngine extends Engine {
             v.reportResults();
             Trace.out(Trace.Level.INFO, "Visitor " + v.getId() + " exited at " + Clock.getInstance().getClock());
         } else {
-            restArea.addQueue(v); // return to Rest Area for another attraction
+            restArea.addQueue(v);
+            v.arriveAtAttraction("RestArea");
         }
     }
 
     @Override
     protected void tryCEvents() {
-        // Try to start service at each service point if idle and queue not empty
         if (!ticketBooth.isReserved() && ticketBooth.isOnQueue()) ticketBooth.beginService();
         if (!restArea.isReserved()    && restArea.isOnQueue())    restArea.beginService();
         if (!attraction1.isReserved() && attraction1.isOnQueue()) attraction1.beginService();
